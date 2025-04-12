@@ -22,8 +22,7 @@ class RAGPipeline:
     
     def pdf_exists_in_project(self, pdf_path: str, project_id: str) -> bool:
         """Check if the PDF has been added to the project."""
-        # Implement check logic
-        pass
+        return self.vector_db.pdf_exists_in_project(pdf_path, project_id)
     
     def process_pdf(self, pdf_path: str) -> None:
         """
@@ -49,15 +48,21 @@ class RAGPipeline:
             logger.error(f"Error in PDF processing pipeline: {e}")
             raise
     
-    def process_pdf_for_project(self, pdf_path: str, project_id: str) -> None:
+    def process_pdf_for_project(self, pdf_path: str, project_id: str, force_rebuild: bool = False) -> None:
         """
         Process a PDF document and store its chunks in the project's vector database.
         
         Args:
             pdf_path: Path to the PDF file
             project_id: ID of the project this PDF belongs to
+            force_rebuild: If True, reprocess even if already indexed
         """
         try:
+            # Check if PDF is already indexed and we're not forcing a rebuild
+            if not force_rebuild and self.pdf_exists_in_project(pdf_path, project_id):
+                logger.info(f"PDF {pdf_path} is already indexed in project {project_id}, skipping processing")
+                return
+            
             # Extract and chunk text from PDF
             logger.info(f"Processing PDF {pdf_path} for project {project_id}")
             chunks = self.pdf_processor.process_pdf(pdf_path)
@@ -69,7 +74,7 @@ class RAGPipeline:
             self.vector_db.add_pdf_chunks_to_project(embedded_chunks, pdf_path, project_id)
             
             logger.info(f"Successfully processed and indexed PDF {pdf_path} for project {project_id}")
-            
+        
         except Exception as e:
             logger.error(f"Error in PDF processing pipeline for project: {e}")
             raise

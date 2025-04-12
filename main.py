@@ -93,13 +93,18 @@ def main():
             logger.error(f"No PDF files found at {args.pdf}")
             return
         
+        processed_count = 0
         # Process each PDF file found
         for pdf_path in pdf_files:
-            logger.info(f"Processing PDF: {pdf_path} for project: {project_id}")
-            pipeline.process_pdf_for_project(pdf_path, project_id)
+            if args.rebuild_index or not pipeline.pdf_exists_in_project(pdf_path, project_id):
+                logger.info(f"Processing PDF: {pdf_path} for project: {project_id}")
+                pipeline.process_pdf_for_project(pdf_path, project_id, force_rebuild=args.rebuild_index)
+                processed_count += 1
+            else:
+                logger.info(f"PDF {pdf_path} is already indexed in project {project_id}, skipping processing")
         
-        # Track with DVC if requested or if auto-push is enabled
-        if args.dvc_push or config.dvc_auto_push:
+        # Only track with DVC if we actually processed any PDFs
+        if processed_count > 0 and (args.dvc_push or config.dvc_auto_push):
             logger.info(f"Tracking project {project_id} vector database with DVC...")
             dvc_track_project(project_id)
         

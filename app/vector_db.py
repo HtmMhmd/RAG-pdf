@@ -365,3 +365,34 @@ class VectorDB:
         except Exception as e:
             logger.error(f"Error querying PDF in project: {e}")
             return []
+    
+    def pdf_exists_in_project(self, pdf_path: str, project_id: str) -> bool:
+        """Check if a PDF has already been indexed in the project.
+        
+        Args:
+            pdf_path: Path to the PDF file
+            project_id: ID of the project
+            
+        Returns:
+            True if the PDF has already been indexed, False otherwise
+        """
+        try:
+            if not self.project_collection_exists(project_id):
+                return False
+                
+            collection = self.get_project_collection(project_id)
+            pdf_id = os.path.basename(pdf_path)
+            
+            # Try to find at least one chunk for this PDF
+            results = collection.get(
+                limit=1,
+                where={"pdf_id": pdf_id}
+            )
+            
+            # If we found at least one chunk, the PDF is already indexed
+            return len(results["ids"]) > 0
+            
+        except Exception as e:
+            logger.error(f"Error checking if PDF exists in project: {e}")
+            # If there's an error, assume PDF is not indexed to be safe
+            return False
