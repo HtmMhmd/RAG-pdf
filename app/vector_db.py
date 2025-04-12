@@ -4,6 +4,7 @@ import chromadb
 from chromadb.utils import embedding_functions
 from typing import List, Dict, Any
 import hashlib
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -99,17 +100,71 @@ class VectorDB:
             documents = [chunk["content"] for chunk in chunks]
             metadatas = [chunk["metadata"] for chunk in chunks]
             
-            # Add documents to the collection
-            collection.add(
-                ids=ids,
-                documents=documents,
-                metadatas=metadatas
-            )
+            # Check if chunks already have embeddings from the embedding generator
+            if "embedding" in chunks[0] and chunks[0]["embedding"] is not None:
+                embeddings = [chunk["embedding"] for chunk in chunks]
+                logger.info("Using pre-generated embeddings for vector database")
+                
+                # Add documents directly with embeddings to avoid re-embedding
+                try:
+                    collection.add(
+                        ids=ids,
+                        documents=documents,
+                        metadatas=metadatas,
+                        embeddings=embeddings
+                    )
+                except TypeError:
+                    # Some versions of ChromaDB might have different signature
+                    # Try adding chunks one by one with embeddings
+                    logger.warning("Falling back to individual chunk insertion")
+                    for i in range(len(ids)):
+                        collection.add(
+                            ids=[ids[i]],
+                            documents=[documents[i]],
+                            metadatas=[metadatas[i]],
+                            embeddings=[embeddings[i]]
+                        )
+            else:
+                # If no pre-generated embeddings, let ChromaDB handle embedding
+                logger.info("No pre-generated embeddings found, letting ChromaDB handle embedding")
+                collection.add(
+                    ids=ids,
+                    documents=documents,
+                    metadatas=metadatas
+                )
             
             logger.info(f"Added {len(chunks)} chunks to the vector database")
             
         except Exception as e:
             logger.error(f"Error adding chunks to database: {e}")
+            # If we get embedding errors, try again with just the text
+            if "embedding" in str(e).lower() or "openai" in str(e).lower():
+                logger.info("Retrying without embeddings and letting ChromaDB use local model")
+                try:
+                    # Create a fresh collection with a local embedding function
+                    if self.collection_exists(pdf_path):
+                        collection_name = self.get_collection_name(pdf_path)
+                        self.client.delete_collection(collection_name)
+                    
+                    # Force using a local embedding model for this collection
+                    local_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
+                        model_name=self.config.local_embedding_model
+                    )
+                    collection = self.client.create_collection(
+                        name=self.get_collection_name(pdf_path),
+                        embedding_function=local_ef
+                    )
+                    
+                    # Add documents without providing embeddings
+                    collection.add(
+                        ids=ids,
+                        documents=documents,
+                        metadatas=metadatas
+                    )
+                    logger.info("Successfully added documents with local embedding function")
+                    return
+                except Exception as inner_e:
+                    logger.error(f"Error in fallback embedding strategy: {inner_e}")
             raise
     
     def query_db(self, question: str, pdf_path: str, n_results: int = None) -> List[Dict[str, Any]]:
