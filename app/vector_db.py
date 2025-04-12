@@ -5,6 +5,7 @@ from chromadb.utils import embedding_functions
 from typing import List, Dict, Any
 import hashlib
 import numpy as np
+from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,11 @@ class VectorDB:
         
         # Select embedding function based on configuration
         self.embedding_function = self.get_embedding_function(config)
+        
+        # Initialize local model for direct embedding when needed
+        self.local_model = None
+        if config.use_local_embeddings:
+            self.local_model = SentenceTransformer(config.local_embedding_model)
     
     def get_embedding_function(self, config):
         """Get the appropriate embedding function based on config."""
@@ -167,6 +173,14 @@ class VectorDB:
                     logger.error(f"Error in fallback embedding strategy: {inner_e}")
             raise
     
+    def get_query_embedding(self, query: str) -> List[float]:
+        """Generate an embedding for a query using the local model."""
+        if self.local_model is None:
+            self.local_model = SentenceTransformer(self.config.local_embedding_model)
+        
+        logger.info(f"Generating query embedding using local model")
+        return self.local_model.encode(query).tolist()
+    
     def query_db(self, question: str, pdf_path: str, n_results: int = None) -> List[Dict[str, Any]]:
         """
         Query the vector database to find chunks relevant to the question.
@@ -185,10 +199,24 @@ class VectorDB:
         try:
             collection = self.get_collection(pdf_path)
             
-            results = collection.query(
-                query_texts=[question],
-                n_results=n_results
-            )
+            # Try the standard query first
+            try:
+                results = collection.query(
+                    query_texts=[question],
+                    n_results=n_results
+                )
+            except Exception as e:
+                # If we get an error (likely OpenAI API related), use local embedding instead
+                logger.warning(f"Error using collection.query: {e}. Falling back to query_by_embeddings.")
+                
+                # Generate embedding using our local model
+                query_embedding = self.get_query_embedding(question)
+                
+                # Query using the embedding directly
+                results = collection.query(
+                    query_embeddings=[query_embedding],
+                    n_results=n_results
+                )
             
             # Convert results to a more convenient format
             chunks = []
@@ -203,4 +231,45 @@ class VectorDB:
             
         except Exception as e:
             logger.error(f"Error querying database: {e}")
-            raise
+            
+            # Last resort fallback: try to get the collection with a local embedding function
+            try:
+                logger.info("Attempting last resort fallback with local embedding function")
+                
+                # Force using a local embedding model for this collection
+                local_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
+                    model_name=self.config.local_embedding_model
+                )
+                
+                # Try to get the collection with the local embedding function
+                collection_name = self.get_collection_name(pdf_path)
+                collection = self.client.get_collection(
+                    name=collection_name,
+                    embedding_function=local_ef
+                )
+                
+                # Generate embedding using our local model
+                query_embedding = self.get_query_embedding(question)
+                
+                # Query using the embedding directly
+                results = collection.query(
+                    query_embeddings=[query_embedding],
+                    n_results=n_results
+                )
+                
+                # Convert results to a more convenient format
+                chunks = []
+                for i in range(len(results["ids"][0])):
+                    chunks.append({
+                        "content": results["documents"][0][i],
+                        "metadata": results["metadatas"][0][i]
+                    })
+                
+                logger.info(f"Retrieved {len(chunks)} relevant chunks using fallback")
+                return chunks
+                
+            except Exception as inner_e:
+                logger.error(f"Error in last resort fallback: {inner_e}")
+                # If all attempts fail, return an empty list
+                logger.warning("All query attempts failed, returning empty results")
+                return []
