@@ -32,11 +32,11 @@ def run_dvc_command(command):
 
 def dvc_track_project(project_id):
     """Track the project's vector database with DVC."""
-    return run_dvc_command(f"bash -c 'source /app/scripts/dvc_helpers.sh && dvc_track_project {project_id}'")
+    return run_dvc_command(f"bash -c 'source scripts/dvc_helpers.sh && dvc_track_project {project_id}'")
 
 def dvc_pull_project(project_id):
     """Pull the project's vector database from DVC remote."""
-    return run_dvc_command(f"bash -c 'source /app/scripts/dvc_helpers.sh && dvc_pull_project {project_id}'")
+    return run_dvc_command(f"bash -c 'source scripts/dvc_helpers.sh && dvc_pull_project {project_id}'")
 
 def find_pdf_files(path):
     """
