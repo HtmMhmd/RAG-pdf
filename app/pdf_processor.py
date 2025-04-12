@@ -1,18 +1,79 @@
 import logging
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 import fitz  # PyMuPDF
 import re
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+import nltk
+from nltk.tokenize import word_tokenize
+
+# Download NLTK data on first import
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
 
 logger = logging.getLogger(__name__)
+
+class NLTKTextSplitter:
+    """
+    Text splitter using NLTK for token-based chunking.
+    """
+    def __init__(self, chunk_size=800, chunk_overlap=200):
+        """
+        Initialize the NLTK text splitter.
+        
+        Args:
+            chunk_size: Maximum number of tokens per chunk
+            chunk_overlap: Number of tokens to overlap between chunks
+        """
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+    
+    def split_text(self, text: str) -> List[str]:
+        """
+        Split text into chunks based on token count.
+        
+        Args:
+            text: The text to split
+            
+        Returns:
+            List of text chunks
+        """
+        # Tokenize the text
+        tokens = word_tokenize(text)
+        
+        if len(tokens) <= self.chunk_size:
+            return [text]
+        
+        # Create chunks based on token count
+        chunks = []
+        start = 0
+        while start < len(tokens):
+            # Find end position for current chunk
+            end = min(start + self.chunk_size, len(tokens))
+            
+            # Extract token sublist
+            chunk_tokens = tokens[start:end]
+            
+            # Rejoin tokens to form a text chunk
+            # We use the original text's spacing by finding the span in the original text
+            chunk_text = ' '.join(chunk_tokens)
+            
+            chunks.append(chunk_text)
+            
+            # Move start position for next chunk, considering overlap
+            start = end - self.chunk_overlap if end < len(tokens) else end
+        
+        # Log chunk statistics
+        logger.debug(f"Split text into {len(chunks)} chunks with NLTK tokenizer")
+        
+        return chunks
 
 class PDFProcessor:
     def __init__(self, config):
         self.config = config
-        self.text_splitter = RecursiveCharacterTextSplitter(
+        self.text_splitter = NLTKTextSplitter(
             chunk_size=config.chunk_size,
-            chunk_overlap=config.chunk_overlap,
-            length_function=len,
+            chunk_overlap=config.chunk_overlap
         )
     
     def extract_text_from_pdf(self, pdf_path: str) -> List[Tuple[str, int]]:
@@ -57,7 +118,7 @@ class PDFProcessor:
             chunks = []
             
             for text, page_num in text_with_pages:
-                # Split the text into chunks
+                # Split the text into chunks using NLTK tokenizer
                 text_chunks = self.text_splitter.split_text(text)
                 
                 # Create chunk objects with metadata
@@ -70,7 +131,7 @@ class PDFProcessor:
                         }
                     })
             
-            logger.info(f"Created {len(chunks)} chunks from the extracted text")
+            logger.info(f"Created {len(chunks)} chunks from the extracted text using NLTK tokenizer")
             return chunks
             
         except Exception as e:

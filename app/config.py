@@ -32,8 +32,8 @@ class Config:
         self.dvc_auto_pull = self.parse_bool(self.get_env_var("DVC_AUTO_PULL", "false"))
         
         # Chunking configuration
-        self.chunk_size = int(self.get_env_var("CHUNK_SIZE", "1000"))
-        self.chunk_overlap = int(self.get_env_var("CHUNK_OVERLAP", "200"))
+        self.chunk_size = int(self.get_env_var("CHUNK_SIZE", "800"))  # Updated default to 800 tokens
+        self.chunk_overlap = int(self.get_env_var("CHUNK_OVERLAP", "200"))  # Updated default to 200 tokens
         
         # RAG configuration
         self.max_chunks = int(self.get_env_var("MAX_CHUNKS", "5"))
