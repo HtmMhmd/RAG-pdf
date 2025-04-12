@@ -62,6 +62,8 @@ pip install -r requirements.txt
 
 ## Usage
 
+### Basic Operations
+
 Process a PDF and ask a question:
 
 ```bash
@@ -79,6 +81,93 @@ Force rebuild of the index:
 ```bash
 python main.py --pdf path/to/your/document.pdf --rebuild-index
 ```
+
+### Project-Based PDF Organization
+
+The system supports organizing PDFs into projects for better management and cross-document querying:
+
+Process a PDF for a specific project:
+
+```bash
+python main.py --pdf path/to/your/document.pdf --project "project_name"
+```
+
+Ask a question about a specific PDF within a project:
+
+```bash
+python main.py --pdf path/to/your/document.pdf --project "project_name" --question "Your question about this document?"
+```
+
+Ask a question across all PDFs in a project:
+
+```bash
+python main.py --project "project_name" --question "Your question about any document in this project?"
+```
+
+### Using Docker Compose
+
+The project includes a Docker Compose configuration for easier deployment:
+
+1. Build and start the container:
+```bash
+docker-compose up --build -d
+```
+
+2. Process a PDF file:
+```bash
+docker-compose run rag-pdf --pdf /app/pdfs/your_document.pdf --project "your_project"
+```
+
+3. Ask a question about a PDF:
+```bash
+docker-compose run rag-pdf --pdf /app/pdfs/your_document.pdf --project "your_project" --question "Your question?"
+```
+
+4. Ask a question across an entire project:
+```bash
+docker-compose run rag-pdf --project "your_project" --question "Your cross-document question?"
+```
+
+5. Access the container shell:
+```bash
+docker-compose run --entrypoint bash rag-pdf
+```
+
+### Project Structure
+
+To organize your PDFs into projects:
+
+1. Create a directory for your project in the `projects` directory:
+```bash
+mkdir -p projects/your_project
+```
+
+2. Copy your PDFs into the project directory:
+```bash
+cp your_documents/*.pdf projects/your_project/
+```
+
+3. Process all PDFs in the project:
+```bash
+for pdf in projects/your_project/*.pdf; do
+  python main.py --pdf "$pdf" --project "your_project"
+done
+```
+
+4. Query across all project documents:
+```bash
+python main.py --project "your_project" --question "What are the key points from all these documents?"
+```
+
+### Environment Variables
+
+Key environment variables that control the system behavior:
+
+- `USE_LOCAL_EMBEDDINGS`: Set to `true` to use local embedding models instead of OpenAI API
+- `LOCAL_EMBEDDING_MODEL`: Specify which local model to use (default: `all-MiniLM-L6-v2`)
+- `EMBEDDING_MODEL`: OpenAI embedding model (default: `text-embedding-ada-002`)
+- `LLM_MODEL`: OpenAI LLM model (default: `gpt-3.5-turbo`)
+- `DEFAULT_PROJECT`: Default project name when not specified (default: `default`)
 
 ## How It Works: RAG Pipeline Explained
 

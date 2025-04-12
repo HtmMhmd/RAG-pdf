@@ -21,6 +21,10 @@ class Config:
         # Vector DB configuration
         self.vector_db_path = self.get_env_var("VECTOR_DB_PATH", "data/vector_db")
         
+        # Project configuration
+        self.default_project = self.get_env_var("DEFAULT_PROJECT", "default")
+        self.projects_dir = self.get_env_var("PROJECTS_DIR", "projects")
+        
         # Chunking configuration
         self.chunk_size = int(self.get_env_var("CHUNK_SIZE", "1000"))
         self.chunk_overlap = int(self.get_env_var("CHUNK_OVERLAP", "200"))

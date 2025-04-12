@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  rag-pdf:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rag-pdf:latest
+    container_name: rag-pdf
+    volumes:
+      # Mount project PDFs directory
+      - ./projects:/app/projects
+      # Mount vector database for persistence
+      - ./data/vector_db:/app/data/vector_db
+      # Mount individual PDF files if needed
+      - ./pdfs:/app/pdfs
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-ada-002}
+      - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
+      - USE_LOCAL_EMBEDDINGS=${USE_LOCAL_EMBEDDINGS:-true}
+      - LOCAL_EMBEDDING_MODEL=${LOCAL_EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      - VECTOR_DB_PATH=/app/data/vector_db
+      - DEFAULT_PROJECT=${DEFAULT_PROJECT:-default}
+      - PROJECTS_DIR=/app/projects
+      - PYTHONUNBUFFERED=1
+      - TOKENIZERS_PARALLELISM=false
+    # Use entrypoint from Dockerfile by default, but allow override
+    # To run shell instead: docker-compose run --entrypoint bash rag-pdf
+    tty: true
+    stdin_open: true
