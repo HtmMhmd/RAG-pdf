@@ -39,18 +39,16 @@ docker run -it --env-file .env -v $(pwd)/sample_pdfs:/app/sample_pdfs rag-pdf --
 ```
 
 ---
-## DVC Tutorial for Managing TFLite Models
+## DVC for Vector Database Version Control
 
-### What is DVC?
+The system uses DVC (Data Version Control) to track and synchronize project vector databases, making it easier to share and version large database files without storing them in Git.
 
-[DVC (Data Version Control)](https://dvc.org/) is an open-source version control system for machine learning projects. It helps track changes to large files like models and datasets without storing them directly in Git.
-
-### Setting Up DVC for .tflite Models
+### Setting Up DVC for Project Vector Databases
 
 1. Install DVC:
    ```bash
    pip install dvc
-   pip install dvc-gdrive
+   pip install dvc-gdrive  # For Google Drive storage
    ```
 
 2. Initialize DVC in your repository:
@@ -60,135 +58,96 @@ docker run -it --env-file .env -v $(pwd)/sample_pdfs:/app/sample_pdfs rag-pdf --
    git commit -m "Initialize DVC"
    ```
 
-### Configuring Google Drive Remote Storage
+### Configuring Remote Storage
 
-1. **Enable Google Drive API** (required to fix the 403 error):
-   - Visit the [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select an existing one
-   - Go to "APIs & Services" > "Library"
-   - Search for "Google Drive API" and enable it
-   - **Wait a few minutes** for the changes to take effect
-
-2. Set up authentication:
-   
-   **STEP 1: Using OAuth (Interactive)**
+1. **Set up Google Drive storage**:
    ```bash
+   # Create a folder in Google Drive and get its ID from the URL
    dvc remote add -d myremote gdrive://your-folder-id
    ```
 
-   **STEP 2: Using Service Account (Non-interactive, recommended for automation)**
-   - Create a service account in Google Cloud Console
-   - Go to "IAM & Admin" > "Service Accounts" > "Create Service Account"
-   - Provide a name and grant necessary permissions
-   - Create a key (JSON format) and download it
-
-   **STEP 3: Configure DVC to use the service account:**
+   **Using a Service Account** (recommended for automation):
    ```bash
+   # After creating a service account and downloading its JSON key
    dvc remote modify myremote gdrive_use_service_account true
-
    dvc remote modify myremote gdrive_service_account_json_file_path path/to/credentials.json
    ```
 
-3. Add additional configuration if needed:
+2. **Alternative storage options**:
    ```bash
-   # To bypass confirmation prompts for downloading potentially malicious files
-   dvc remote modify myremote gdrive_acknowledge_abuse true
-   
-   # Commit your DVC configuration
-   git add .dvc/config
-   git commit -m "Configure DVC remote storage"
-   ```
-
-### Tracking TFLite Models with DVC
-
-1. Add your .tflite model to DVC:
-   ```bash
-   dvc add Model/path/to/your/model.tflite
-   ```
-
-2. Stop Git from tracking the model file:
-   ```bash
-   git rm -r --cached 'Model/path/to/your/model.tflite'
-   ```
-
-3. Commit the DVC file to Git:
-   ```bash
-   git add Model/path/to/your/model.tflite.dvc
-   git commit -m "Add model with DVC tracking"
-   ```
-
-4. Push the model to remote storage:
-   ```bash
-   dvc push
-   ```
-
-### Troubleshooting DVC with Google Drive
-
-1. **Error 403: Google Drive API not enabled**
-   - Follow the link in the error message to enable the Google Drive API
-   - Wait a few minutes for the change to take effect
-   - Try again with `dvc push`
-
-2. **Authentication issues with service account**
-   - Ensure the service account has access to the Google Drive folder
-   - Share the folder with the service account email address
-   - Make sure the JSON key file path is correct
-
-3. **Permission issues**
-   - Verify the folder ID is correct
-   - Ensure your account or service account has write access to the folder
-   - Try creating a new folder specifically for DVC storage
-
-4. **Alternative approach: Use a different remote**
-   If Google Drive continues to cause issues, consider alternatives:
-   ```bash
-   # Local remote
-   dvc remote add -d localremote /path/to/local/storage
-   
    # AWS S3
-   pip install dvc[s3]
-   dvc remote add -d s3remote s3://bucket/path
+   dvc remote add -d myremote s3://bucket/path
    
    # Azure Blob Storage
-   pip install dvc[azure]
-   dvc remote add -d azremote azure://container/path
+   dvc remote add -d myremote azure://container/path
    ```
 
-### Working with Model Versions
+### Using DVC with Project Vector Databases
 
-1. Update a model:
+Our system automatically integrates with DVC when processing PDFs and answering questions. You can control this behavior with these environment variables:
+
+- `DVC_REMOTE`: URL of your DVC remote
+- `DVC_AUTO_PUSH`: Automatically push vector databases after processing (true/false)
+- `DVC_AUTO_PULL`: Automatically pull vector databases before querying (true/false)
+
+#### Manual DVC Commands
+
+You can also manually track, push, and pull project vector databases:
+
+1. **Track a project's vector database**:
    ```bash
-   # Replace the model file with a new version
-   cp /path/to/new/model.tflite models/face_recognition.tflite
-   
-   # Track the changes
-   dvc add models/face_recognition.tflite
-   git add models/face_recognition.tflite.dvc
-   git commit -m "Update face recognition model"
-   dvc push
+   # After processing PDFs for a project
+   dvc add projects/your_project/vector_db
+   git add projects/your_project/vector_db.dvc
+   git commit -m "Add vector database for project: your_project"
    ```
 
-2. Switch between model versions:
+2. **Push to remote storage**:
    ```bash
-   # Checkout a specific Git commit
-   git checkout <commit-hash>
-   
-   # Pull the corresponding model version
-   dvc pull
+   dvc push projects/your_project/vector_db.dvc
    ```
 
-3. Create a model tag:
+3. **Pull from remote storage**:
    ```bash
-   git tag -a model-v1.0 -m "Model version 1.0"
-   git push origin model-v1.0
+   dvc pull projects/your_project/vector_db.dvc
    ```
 
-### Best Practices
+#### Using with Docker Compose
 
-1. Always run `dvc push` after adding or updating models
-2. Use meaningful commit messages for model changes
-3. Consider tagging important model versions
-4. Add model metrics to track performance changes
+The Docker setup includes built-in DVC support:
+
+```bash
+# Process PDFs and push to DVC remote
+docker-compose run rag-pdf --pdf /app/pdfs/document.pdf --project "your_project" --dvc-push
+
+# Pull existing vector database and query
+docker-compose run rag-pdf --project "your_project" --dvc-pull --question "Your question?"
+```
+
+### Best Practices for DVC with RAG Projects
+
+1. **Version control strategy**: Create a new DVC entry whenever you add significant PDFs to a project
+2. **Git workflow**: Always commit the .dvc files to Git after running `dvc add`
+3. **Backup**: Regularly push your DVC files to ensure your vector databases are backed up
+4. **Collaboration**: Team members can easily share project knowledge bases by pulling the vector databases
+5. **Storage optimization**: Consider periodically rebuilding indices for frequently updated projects
+
+### Sharing Vector Databases with Team Members
+
+To share vector databases with team members:
+
+1. Commit and push the .dvc files to Git:
+   ```bash
+   git add projects/your_project/vector_db.dvc
+   git commit -m "Update vector database for project"
+   git push
+   ```
+
+2. Team members can then pull the database:
+   ```bash
+   git pull
+   dvc pull projects/your_project/vector_db.dvc
+   ```
 
 ## Development Setup
 
@@ -254,6 +213,31 @@ Ask a question across all PDFs in a project:
 
 ```bash
 python main.py --project "project_name" --question "Your question about any document in this project?"
+```
+
+### Processing Multiple PDFs at Once
+
+Process all PDFs in a directory and add them to a project:
+
+```bash
+python main.py --pdf path/to/pdf/directory --project "project_name"
+```
+
+This will:
+1. Scan the directory (and subdirectories) for PDF files
+2. Process each PDF found and add it to the specified project
+3. Push the vector database to DVC if configured
+
+You can also immediately ask a question about all the processed PDFs:
+
+```bash
+python main.py --pdf path/to/pdf/directory --project "project_name" --question "What are the key topics across all these documents?"
+```
+
+Using with Docker:
+
+```bash
+docker-compose run rag-pdf --pdf /app/pdfs/directory --project "your_project"
 ```
 
 ### Using Docker Compose

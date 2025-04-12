@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import subprocess
+import glob
 from app.config import Config
 from app.rag_pipeline import RAGPipeline
 
@@ -37,9 +38,31 @@ def dvc_pull_project(project_id):
     """Pull the project's vector database from DVC remote."""
     return run_dvc_command(f"bash -c 'source /app/scripts/dvc_helpers.sh && dvc_pull_project {project_id}'")
 
+def find_pdf_files(path):
+    """
+    Find all PDF files in a directory or return the path if it's a single PDF.
+    
+    Args:
+        path: Path to a PDF file or directory containing PDFs
+        
+    Returns:
+        List of paths to PDF files
+    """
+    if os.path.isdir(path):
+        # Find all PDFs in the directory and its subdirectories
+        pdf_files = glob.glob(os.path.join(path, "**", "*.pdf"), recursive=True)
+        logger.info(f"Found {len(pdf_files)} PDF files in directory {path}")
+        return pdf_files
+    elif os.path.isfile(path) and path.lower().endswith('.pdf'):
+        # Single PDF file
+        return [path]
+    else:
+        logger.warning(f"Path {path} is not a PDF file or directory")
+        return []
+
 def main():
     parser = argparse.ArgumentParser(description="PDF RAG System")
-    parser.add_argument("--pdf", type=str, help="Path to the PDF file")
+    parser.add_argument("--pdf", type=str, help="Path to a PDF file or directory containing PDFs")
     parser.add_argument("--project", type=str, help="Project ID to organize PDFs")
     parser.add_argument("--question", type=str, help="Question to ask about the PDF or project")
     parser.add_argument("--rebuild-index", action="store_true", help="Force rebuild of the vector index")
@@ -63,19 +86,27 @@ def main():
     pipeline = RAGPipeline(config)
     
     if args.pdf:
-        # Process a specific PDF for a project
-        logger.info(f"Processing PDF: {args.pdf} for project: {project_id}")
-        pipeline.process_pdf_for_project(args.pdf, project_id)
+        # Find all PDFs to process
+        pdf_files = find_pdf_files(args.pdf)
+        
+        if not pdf_files:
+            logger.error(f"No PDF files found at {args.pdf}")
+            return
+        
+        # Process each PDF file found
+        for pdf_path in pdf_files:
+            logger.info(f"Processing PDF: {pdf_path} for project: {project_id}")
+            pipeline.process_pdf_for_project(pdf_path, project_id)
         
         # Track with DVC if requested or if auto-push is enabled
         if args.dvc_push or config.dvc_auto_push:
             logger.info(f"Tracking project {project_id} vector database with DVC...")
             dvc_track_project(project_id)
         
-        if args.question:
-            # Query about a specific PDF in the project
-            logger.info(f"Question about PDF {args.pdf}: {args.question}")
-            answer, citations = pipeline.answer_question_for_pdf_in_project(args.question, args.pdf, project_id)
+        # If question provided and there's only one PDF, query that specific PDF
+        if args.question and len(pdf_files) == 1:
+            logger.info(f"Question about PDF {pdf_files[0]}: {args.question}")
+            answer, citations = pipeline.answer_question_for_pdf_in_project(args.question, pdf_files[0], project_id)
             
             print("\nAnswer:")
             print(answer)
@@ -84,9 +115,20 @@ def main():
                 print("\nCitations:")
                 for citation in citations:
                     print(f"- Page {citation}")
+        # If question provided but multiple PDFs processed, query the whole project
+        elif args.question and len(pdf_files) > 1:
+            logger.info(f"Question about project {project_id} with {len(pdf_files)} PDFs: {args.question}")
+            answer, citations = pipeline.answer_question_for_project(args.question, project_id)
             
+            print("\nAnswer:")
+            print(answer)
+            
+            if citations:
+                print("\nCitations:")
+                for citation in citations:
+                    print(f"- Document: {citation['pdf_id']}, Page {citation['page']}")
         else:
-            logger.info(f"PDF {args.pdf} processed and indexed in project {project_id}. Run again with a question to query.")
+            logger.info(f"Processed {len(pdf_files)} PDFs and indexed in project {project_id}. Run again with a question to query.")
     
     elif args.question and project_id:
         # Query about an entire project
