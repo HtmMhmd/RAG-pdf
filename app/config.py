@@ -10,9 +10,13 @@ class Config:
         load_dotenv()
         
         # OpenAI API configuration
-        self.openai_api_key = self.get_env_var("OPENAI_API_KEY")
+        self.openai_api_key = self.get_env_var("OPENAI_API_KEY", "")
         self.embedding_model = self.get_env_var("EMBEDDING_MODEL", "text-embedding-ada-002")
         self.llm_model = self.get_env_var("LLM_MODEL", "gpt-3.5-turbo")
+        
+        # Local embedding model configuration
+        self.use_local_embeddings = self.parse_bool(self.get_env_var("USE_LOCAL_EMBEDDINGS", "false"))
+        self.local_embedding_model = self.get_env_var("LOCAL_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
         
         # Vector DB configuration
         self.vector_db_path = self.get_env_var("VECTOR_DB_PATH", "data/vector_db")
@@ -32,3 +36,7 @@ class Config:
                 raise ValueError(f"Environment variable {var_name} not set")
             logger.warning(f"Environment variable {var_name} not set, using default: {default}")
         return value
+    
+    def parse_bool(self, value):
+        """Convert string value to boolean."""
+        return str(value).lower() in ('true', 'yes', '1', 't', 'y')

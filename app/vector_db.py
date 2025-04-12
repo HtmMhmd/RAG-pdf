@@ -18,15 +18,26 @@ class VectorDB:
         # Initialize ChromaDB
         self.client = chromadb.PersistentClient(path=self.db_path)
         
-        # Use OpenAI embeddings if we're using their API
-        if "ada" in config.embedding_model or "openai" in config.embedding_model.lower():
-            self.embedding_function = embedding_functions.OpenAIEmbeddingFunction(
-                api_key=config.openai_api_key,
-                model_name=config.embedding_model
-            )
-        else:
-            # Default to a local embedding model
-            self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction()
+        # Select embedding function based on configuration
+        self.embedding_function = self.get_embedding_function(config)
+    
+    def get_embedding_function(self, config):
+        """Get the appropriate embedding function based on config."""
+        if config.use_local_embeddings:
+            logger.info(f"Using local embedding function with model: {config.local_embedding_model}")
+            return embedding_functions.SentenceTransformerEmbeddingFunction(model_name=config.local_embedding_model)
+        elif "ada" in config.embedding_model or "openai" in config.embedding_model.lower():
+            # Only use OpenAI if we have a valid API key
+            if config.openai_api_key and config.openai_api_key.strip():
+                logger.info(f"Using OpenAI embedding function with model: {config.embedding_model}")
+                return embedding_functions.OpenAIEmbeddingFunction(
+                    api_key=config.openai_api_key,
+                    model_name=config.embedding_model
+                )
+        
+        # Default to a local embedding model
+        logger.info(f"Using default local embedding function")
+        return embedding_functions.SentenceTransformerEmbeddingFunction(model_name=config.local_embedding_model)
     
     def get_collection_name(self, pdf_path: str) -> str:
         """Generate a unique collection name based on the PDF path."""
