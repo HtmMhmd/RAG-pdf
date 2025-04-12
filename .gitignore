@@ -50,5 +50,5 @@ ENV/
 *.pyd
 
 # Data files
-data/
+# data/
 sample_pdfs/*.pdf
