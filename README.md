@@ -38,6 +38,158 @@ docker build -t rag-pdf .
 docker run -it --env-file .env -v $(pwd)/sample_pdfs:/app/sample_pdfs rag-pdf --pdf sample_pdfs/your_document.pdf --question "Your question about the document?"
 ```
 
+---
+## DVC Tutorial for Managing TFLite Models
+
+### What is DVC?
+
+[DVC (Data Version Control)](https://dvc.org/) is an open-source version control system for machine learning projects. It helps track changes to large files like models and datasets without storing them directly in Git.
+
+### Setting Up DVC for .tflite Models
+
+1. Install DVC:
+   ```bash
+   pip install dvc
+   pip install dvc-gdrive
+   ```
+
+2. Initialize DVC in your repository:
+   ```bash
+   dvc init
+   git add .dvc .dvcignore
+   git commit -m "Initialize DVC"
+   ```
+
+### Configuring Google Drive Remote Storage
+
+1. **Enable Google Drive API** (required to fix the 403 error):
+   - Visit the [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Go to "APIs & Services" > "Library"
+   - Search for "Google Drive API" and enable it
+   - **Wait a few minutes** for the changes to take effect
+
+2. Set up authentication:
+   
+   **STEP 1: Using OAuth (Interactive)**
+   ```bash
+   dvc remote add -d myremote gdrive://your-folder-id
+   ```
+
+   **STEP 2: Using Service Account (Non-interactive, recommended for automation)**
+   - Create a service account in Google Cloud Console
+   - Go to "IAM & Admin" > "Service Accounts" > "Create Service Account"
+   - Provide a name and grant necessary permissions
+   - Create a key (JSON format) and download it
+
+   **STEP 3: Configure DVC to use the service account:**
+   ```bash
+   dvc remote modify myremote gdrive_use_service_account true
+
+   dvc remote modify myremote gdrive_service_account_json_file_path path/to/credentials.json
+   ```
+
+3. Add additional configuration if needed:
+   ```bash
+   # To bypass confirmation prompts for downloading potentially malicious files
+   dvc remote modify myremote gdrive_acknowledge_abuse true
+   
+   # Commit your DVC configuration
+   git add .dvc/config
+   git commit -m "Configure DVC remote storage"
+   ```
+
+### Tracking TFLite Models with DVC
+
+1. Add your .tflite model to DVC:
+   ```bash
+   dvc add Model/path/to/your/model.tflite
+   ```
+
+2. Stop Git from tracking the model file:
+   ```bash
+   git rm -r --cached 'Model/path/to/your/model.tflite'
+   ```
+
+3. Commit the DVC file to Git:
+   ```bash
+   git add Model/path/to/your/model.tflite.dvc
+   git commit -m "Add model with DVC tracking"
+   ```
+
+4. Push the model to remote storage:
+   ```bash
+   dvc push
+   ```
+
+### Troubleshooting DVC with Google Drive
+
+1. **Error 403: Google Drive API not enabled**
+   - Follow the link in the error message to enable the Google Drive API
+   - Wait a few minutes for the change to take effect
+   - Try again with `dvc push`
+
+2. **Authentication issues with service account**
+   - Ensure the service account has access to the Google Drive folder
+   - Share the folder with the service account email address
+   - Make sure the JSON key file path is correct
+
+3. **Permission issues**
+   - Verify the folder ID is correct
+   - Ensure your account or service account has write access to the folder
+   - Try creating a new folder specifically for DVC storage
+
+4. **Alternative approach: Use a different remote**
+   If Google Drive continues to cause issues, consider alternatives:
+   ```bash
+   # Local remote
+   dvc remote add -d localremote /path/to/local/storage
+   
+   # AWS S3
+   pip install dvc[s3]
+   dvc remote add -d s3remote s3://bucket/path
+   
+   # Azure Blob Storage
+   pip install dvc[azure]
+   dvc remote add -d azremote azure://container/path
+   ```
+
+### Working with Model Versions
+
+1. Update a model:
+   ```bash
+   # Replace the model file with a new version
+   cp /path/to/new/model.tflite models/face_recognition.tflite
+   
+   # Track the changes
+   dvc add models/face_recognition.tflite
+   git add models/face_recognition.tflite.dvc
+   git commit -m "Update face recognition model"
+   dvc push
+   ```
+
+2. Switch between model versions:
+   ```bash
+   # Checkout a specific Git commit
+   git checkout <commit-hash>
+   
+   # Pull the corresponding model version
+   dvc pull
+   ```
+
+3. Create a model tag:
+   ```bash
+   git tag -a model-v1.0 -m "Model version 1.0"
+   git push origin model-v1.0
+   ```
+
+### Best Practices
+
+1. Always run `dvc push` after adding or updating models
+2. Use meaningful commit messages for model changes
+3. Consider tagging important model versions
+4. Add model metrics to track performance changes
+
 ## Development Setup
 
 ### Using VS Code Devcontainer

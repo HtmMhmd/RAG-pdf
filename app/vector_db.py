@@ -14,19 +14,17 @@ class VectorDB:
         self.config = config
         self.db_path = config.vector_db_path
         
-        # Create the directory if it doesn't exist
+        # Create the base directory if it doesn't exist
         os.makedirs(self.db_path, exist_ok=True)
-        
-        # Initialize ChromaDB
-        self.client = chromadb.PersistentClient(path=self.db_path)
-        
-        # Select embedding function based on configuration
-        self.embedding_function = self.get_embedding_function(config)
         
         # Initialize local model for direct embedding when needed
         self.local_model = None
         if config.use_local_embeddings:
             self.local_model = SentenceTransformer(config.local_embedding_model)
+        
+        # Current project client cache
+        self._project_clients = {}
+        self.default_embedding_function = self.get_embedding_function(config)
     
     def get_embedding_function(self, config):
         """Get the appropriate embedding function based on config."""
@@ -46,53 +44,38 @@ class VectorDB:
         logger.info(f"Using default local embedding function")
         return embedding_functions.SentenceTransformerEmbeddingFunction(model_name=config.local_embedding_model)
     
-    def get_collection_name(self, pdf_path: str) -> str:
-        """Generate a unique collection name based on the PDF path."""
-        return f"pdf_{hashlib.md5(pdf_path.encode()).hexdigest()}"
+    def get_query_embedding(self, query: str) -> List[float]:
+        """Generate an embedding for a query using the local model."""
+        if self.local_model is None:
+            self.local_model = SentenceTransformer(self.config.local_embedding_model)
+        
+        logger.info(f"Generating query embedding using local model")
+        return self.local_model.encode(query).tolist()
     
-    def collection_exists(self, pdf_path: str) -> bool:
-        """Check if a collection for the given PDF already exists."""
-        collection_name = self.get_collection_name(pdf_path)
-        try:
-            collections = self.client.list_collections()
-            return any(collection.name == collection_name for collection in collections)
-        except Exception as e:
-            logger.error(f"Error checking collection existence: {e}")
-            return False
+    def get_project_db_path(self, project_id: str) -> str:
+        """Get the database path for a specific project."""
+        project_dir = os.path.join(self.config.projects_dir, project_id)
+        vector_db_path = os.path.join(project_dir, "vector_db")
+        os.makedirs(vector_db_path, exist_ok=True)
+        return vector_db_path
     
-    def create_collection(self, pdf_path: str) -> chromadb.Collection:
-        """Create a new collection for the PDF."""
-        collection_name = self.get_collection_name(pdf_path)
-        try:
-            return self.client.create_collection(
-                name=collection_name,
-                embedding_function=self.embedding_function
-            )
-        except Exception as e:
-            logger.error(f"Error creating collection: {e}")
-            raise
-    
-    def get_collection(self, pdf_path: str) -> chromadb.Collection:
-        """Get the collection for the PDF."""
-        collection_name = self.get_collection_name(pdf_path)
-        try:
-            return self.client.get_collection(
-                name=collection_name,
-                embedding_function=self.embedding_function
-            )
-        except Exception as e:
-            logger.error(f"Error getting collection: {e}")
-            raise
+    def get_project_client(self, project_id: str) -> chromadb.PersistentClient:
+        """Get a ChromaDB client for a specific project."""
+        if project_id not in self._project_clients:
+            db_path = self.get_project_db_path(project_id)
+            self._project_clients[project_id] = chromadb.PersistentClient(path=db_path)
+        return self._project_clients[project_id]
     
     def get_project_collection_name(self, project_id: str) -> str:
-        """Generate a unique collection name based on the project ID."""
+        """Generate a unique collection name for the project."""
         return f"project_{hashlib.md5(project_id.encode()).hexdigest()}"
     
     def project_collection_exists(self, project_id: str) -> bool:
         """Check if a collection for the given project already exists."""
         collection_name = self.get_project_collection_name(project_id)
         try:
-            collections = self.client.list_collections()
+            client = self.get_project_client(project_id)
+            collections = client.list_collections()
             return any(collection.name == collection_name for collection in collections)
         except Exception as e:
             logger.error(f"Error checking project collection existence: {e}")
@@ -102,9 +85,10 @@ class VectorDB:
         """Create a new collection for the project."""
         collection_name = self.get_project_collection_name(project_id)
         try:
-            return self.client.create_collection(
+            client = self.get_project_client(project_id)
+            return client.create_collection(
                 name=collection_name,
-                embedding_function=self.embedding_function
+                embedding_function=self.default_embedding_function
             )
         except Exception as e:
             logger.error(f"Error creating project collection: {e}")
@@ -114,9 +98,10 @@ class VectorDB:
         """Get the collection for the project."""
         collection_name = self.get_project_collection_name(project_id)
         try:
-            return self.client.get_collection(
+            client = self.get_project_client(project_id)
+            return client.get_collection(
                 name=collection_name,
-                embedding_function=self.embedding_function
+                embedding_function=self.default_embedding_function
             )
         except Exception as e:
             logger.error(f"Error getting project collection: {e}")
@@ -206,13 +191,13 @@ class VectorDB:
                     collection_name = self.get_project_collection_name(project_id)
                     if self.project_collection_exists(project_id):
                         # Get existing collection with local embeddings
-                        collection = self.client.get_collection(
+                        collection = self.get_project_client(project_id).get_collection(
                             name=collection_name,
                             embedding_function=local_ef
                         )
                     else:
                         # Create new collection with local embeddings
-                        collection = self.client.create_collection(
+                        collection = self.get_project_client(project_id).create_collection(
                             name=collection_name,
                             embedding_function=local_ef
                         )
@@ -380,11 +365,3 @@ class VectorDB:
         except Exception as e:
             logger.error(f"Error querying PDF in project: {e}")
             return []
-    
-    def get_query_embedding(self, query: str) -> List[float]:
-        """Generate an embedding for a query using the local model."""
-        if self.local_model is None:
-            self.local_model = SentenceTransformer(self.config.local_embedding_model)
-        
-        logger.info(f"Generating query embedding using local model")
-        return self.local_model.encode(query).tolist()

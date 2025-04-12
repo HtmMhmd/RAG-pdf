@@ -1,9 +1,9 @@
 import argparse
 import logging
 import os
+import subprocess
 from app.config import Config
 from app.rag_pipeline import RAGPipeline
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,

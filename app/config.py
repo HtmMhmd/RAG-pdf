@@ -18,12 +18,18 @@ class Config:
         self.use_local_embeddings = self.parse_bool(self.get_env_var("USE_LOCAL_EMBEDDINGS", "false"))
         self.local_embedding_model = self.get_env_var("LOCAL_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
         
-        # Vector DB configuration
-        self.vector_db_path = self.get_env_var("VECTOR_DB_PATH", "data/vector_db")
-        
         # Project configuration
         self.default_project = self.get_env_var("DEFAULT_PROJECT", "default")
         self.projects_dir = self.get_env_var("PROJECTS_DIR", "projects")
+        os.makedirs(self.projects_dir, exist_ok=True)
+        
+        # Vector DB configuration (legacy path, kept for backward compatibility)
+        self.vector_db_path = self.get_env_var("VECTOR_DB_PATH", "data/vector_db")
+        
+        # DVC configuration
+        self.dvc_remote = self.get_env_var("DVC_REMOTE", "")
+        self.dvc_auto_push = self.parse_bool(self.get_env_var("DVC_AUTO_PUSH", "false"))
+        self.dvc_auto_pull = self.parse_bool(self.get_env_var("DVC_AUTO_PULL", "false"))
         
         # Chunking configuration
         self.chunk_size = int(self.get_env_var("CHUNK_SIZE", "1000"))
@@ -44,3 +50,10 @@ class Config:
     def parse_bool(self, value):
         """Convert string value to boolean."""
         return str(value).lower() in ('true', 'yes', '1', 't', 'y')
+    
+    def get_project_vector_db_path(self, project_id):
+        """Get the path to the vector database for a specific project."""
+        project_dir = os.path.join(self.projects_dir, project_id)
+        os.makedirs(project_dir, exist_ok=True)
+        vector_db_path = os.path.join(project_dir, "vector_db")
+        return vector_db_path

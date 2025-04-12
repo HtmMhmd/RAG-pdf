@@ -14,6 +14,11 @@ services:
       - ./data/vector_db:/app/data/vector_db
       # Mount individual PDF files if needed
       - ./pdfs:/app/pdfs
+      # Mount DVC cache and config
+      - ./.dvc:/app/.dvc
+      - ~/.dvc/cache:/root/.dvc/cache
+      # Mount credentials for DVC
+      - ~/.config/gcloud:/root/.config/gcloud
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-ada-002}
@@ -23,6 +28,9 @@ services:
       - VECTOR_DB_PATH=/app/data/vector_db
       - DEFAULT_PROJECT=${DEFAULT_PROJECT:-default}
       - PROJECTS_DIR=/app/projects
+      - DVC_REMOTE=${DVC_REMOTE}
+      - DVC_AUTO_PUSH=${DVC_AUTO_PUSH:-false}
+      - DVC_AUTO_PULL=${DVC_AUTO_PULL:-false}
       - PYTHONUNBUFFERED=1
       - TOKENIZERS_PARALLELISM=false
     # Use entrypoint from Dockerfile by default, but allow override
