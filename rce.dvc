@@ -1,0 +1,6 @@
+outs:
+- md5: 170c5f7a0e9e77a90be54b2f2cc95594.dir
+  size: 108353752
+  nfiles: 6
+  hash: md5
+  path: rce

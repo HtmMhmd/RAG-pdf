@@ -55,4 +55,4 @@ sample_pdfs/*.pdf
 .dvc/dvc-face-recognizer-e9c05e567127.json
 projects/*
 pdfs/*
-nltk_data
+/rce
