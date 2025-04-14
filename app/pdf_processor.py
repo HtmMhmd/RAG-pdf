@@ -6,25 +6,26 @@ import os
 
 from langchain.text_splitter import NLTKTextSplitter
 import nltk
-nltk.download('punkt')
+from langchain_text_splitters.nltk import NLTKTextSplitter
+
+# Download NLTK data on first import
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
 
 
 logger = logging.getLogger(__name__)
-# # Use ./nltk_data in the workspace
-# nltk_data_dir = os.path.join(os.getcwd(), "nltk_data")
-# # Create the directory if it doesn't exist
-# print(f"NLTK data directory: {nltk_data_dir}")
-# os.makedirs(nltk_data_dir, exist_ok=True)
-# os.environ["NLTK_DATA"] = nltk_data_dir
 
 
 class PDFProcessor:
     def __init__(self, config):
         self.config = config
-        # Use LangChain's NLTKTextSplitter directly
+        # Initialize LangChain's NLTKTextSplitter
         self.text_splitter = NLTKTextSplitter(
             chunk_size=config.chunk_size,
-            chunk_overlap=config.chunk_overlap
+            chunk_overlap=config.chunk_overlap,
+            language="english"
         )
 
     def extract_text_from_pdf(self, pdf_path: str) -> List[Tuple[str, int]]:
@@ -71,7 +72,7 @@ class PDFProcessor:
 
             for text, page_num in text_with_pages:
                 # Split the text into chunks using LangChain's NLTKTextSplitter
-                text_chunks = self.text_splitter.create_documents(text)
+                text_chunks = self.text_splitter.split_text(text)
 
                 # Create chunk objects with metadata
                 for i, chunk in enumerate(text_chunks):
