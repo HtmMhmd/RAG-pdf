@@ -262,6 +262,74 @@ def push_to_dvc(self, project_name: str) -> bool:
         return False
 ```
 
+## DVC for Vector Database Version Control
+
+### Using DVC with the Research Project
+
+The repository includes a pre-configured research project with its vector database already tracked in DVC. To use it:
+
+1. **Pull the research project vector database:**
+   ```bash
+   # Navigate to the project directory
+   cd /workspaces/RAG-pdf
+   
+   # Ensure the DVC files aren't git-ignored
+   # If you see an error about "bad DVC file name is git-ignored", check your .gitignore file
+   # Make sure it contains these lines to ignore the data but not the DVC tracking files:
+   # projects/research_project/vector_db/**
+   # !projects/research_project/vector_db.dvc
+   
+   # Pull the specific research project vector database
+   dvc pull projects/research_project/vector_db.dvc
+   ```
+
+2. **Verify the vector database was pulled correctly:**
+   ```bash
+   # Check that the vector database files exist
+   ls -la projects/research_project/vector_db
+   ```
+
+3. **Ask questions using the pre-built vector database:**
+   ```bash
+   # Use Docker Compose
+   docker-compose run rag-pdf --project "research_project" --question "What are the key findings in these research papers?"
+   
+   # Or with Python directly
+   python main.py --project "research_project" --question "What are the key findings in these research papers?"
+   ```
+
+4. **Update the vector database after adding new PDFs:**
+   ```bash
+   # Process new PDFs
+   docker-compose run rag-pdf --pdf /app/pdfs/new_paper.pdf --project "research_project"
+   
+   # Update the DVC tracking
+   dvc add projects/research_project/vector_db
+   git add projects/research_project/vector_db.dvc
+   git commit -m "Update research project vector database"
+   dvc push projects/research_project/vector_db.dvc
+   ```
+
+### Sharing the Research Project
+
+To share the research project with team members:
+
+1. **Push your changes to the repository:**
+   ```bash
+   git push origin main
+   ```
+
+2. **Team members can then pull both the code and the vector database:**
+   ```bash
+   git pull
+   dvc pull projects/research_project/vector_db.dvc
+   ```
+
+3. **Now they can immediately query the same document collection:**
+   ```bash
+   docker-compose run rag-pdf --project "research_project" --question "Summarize the main topics in these papers"
+   ```
+
 ## 📊 Usage Examples
 
 ### Example 1: Processing a Technical PDF and Asking Questions

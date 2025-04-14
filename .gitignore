@@ -54,4 +54,7 @@ ENV/
 sample_pdfs/*.pdf
 .dvc/dvc-face-recognizer-e9c05e567127.json
 pdfs/*
-projects/research_project/vector_db
+
+# Ignore actual vector database directories but NOT the DVC files
+projects/research_project/vector_db/**
+!projects/research_project/vector_db.dvc
