@@ -240,6 +240,26 @@ Using with Docker:
 docker-compose run rag-pdf --pdf /app/pdfs/directory --project "your_project"
 ```
 
+#### Using the Batch Processing Script
+
+For more convenient batch processing, you can use the provided shell script:
+
+```bash
+# Make the script executable
+chmod +x scripts/process_project_pdfs.sh
+
+# Run the script with project name and PDF directory
+./scripts/process_project_pdfs.sh project_name path/to/pdf/directory
+
+# Example:
+./scripts/process_project_pdfs.sh embedded_linux projects/embedded_linux
+```
+
+The script will:
+1. Process all PDFs found in the specified directory (including subdirectories)
+2. Add each PDF to the specified project
+3. Show progress information during processing
+
 ### Using Docker Compose
 
 The project includes a Docker Compose configuration for easier deployment:
@@ -285,9 +305,13 @@ cp your_documents/*.pdf projects/your_project/
 
 3. Process all PDFs in the project:
 ```bash
+# Manual method
 for pdf in projects/your_project/*.pdf; do
   python main.py --pdf "$pdf" --project "your_project"
 done
+
+# Or using the batch processing script
+./scripts/process_project_pdfs.sh your_project projects/your_project
 ```
 
 4. Query across all project documents:

@@ -16,8 +16,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Pre-download the sentence transformer model to ensure it's available for offline use
 RUN python -c "from sentence_transformers import SentenceTransformer; \
-               model = SentenceTransformer('all-MiniLM-L6-v2'); \
-               print(f'Downloaded model with embedding size: {len(model.encode(\"test\"))}');"
+    model = SentenceTransformer('all-MiniLM-L6-v2'); \
+    print(f'Downloaded model with embedding size: {len(model.encode(\"test\"))}');\
+    import nltk; \
+    nltk.download('punkt');"
 
 # Set up DVC
 RUN pip install dvc dvc-gdrive
