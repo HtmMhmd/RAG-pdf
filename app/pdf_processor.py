@@ -2,90 +2,26 @@ import logging
 from typing import List, Tuple, Dict, Any
 import fitz  # PyMuPDF
 import re
-import nltk
-from nltk.tokenize import word_tokenize
-
 import os
 
-# Use ./nltk_data in the workspace
-nltk_data_dir = os.path.join(os.getcwd(), "nltk_data")
-# Create the directory if it doesn't exist
-print(f"NLTK data directory: {nltk_data_dir}")
-os.makedirs(nltk_data_dir, exist_ok=True)
-os.environ["NLTK_DATA"] = nltk_data_dir
-
-# try:
-#     # check the new location.
-#     nltk.data.find('tokenizers/punkt/english.pickle')
-# except LookupError:
-nltk.download('punkt_tab', download_dir=nltk_data_dir)
-nltk.data.find('tokenizers/punkt_tab/english/')
+from langchain.text_splitter import NLTKTextSplitter
+import nltk
+nltk.download('punkt')
 
 
 logger = logging.getLogger(__name__)
-
-
-class NLTKTextSplitter:
-    """
-    Text splitter using NLTK for token-based chunking.
-    """
-
-    def __init__(self, chunk_size=800, chunk_overlap=200):
-        """
-        Initialize the NLTK text splitter.
-
-        Args:
-            chunk_size: Maximum number of tokens per chunk
-            chunk_overlap: Number of tokens to overlap between chunks
-        """
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
-
-    def split_text(self, text: str) -> List[str]:
-        """
-        Split text into chunks based on token count.
-
-        Args:
-            text: The text to split
-
-        Returns:
-            List of text chunks
-        """
-        # Tokenize the text
-        tokens = word_tokenize(text)
-
-        if len(tokens) <= self.chunk_size:
-            return [text]
-
-        # Create chunks based on token count
-        chunks = []
-        start = 0
-        while start < len(tokens):
-            # Find end position for current chunk
-            end = min(start + self.chunk_size, len(tokens))
-
-            # Extract token sublist
-            chunk_tokens = tokens[start:end]
-
-            # Rejoin tokens to form a text chunk
-            # We use the original text's spacing by finding the span in the original text
-            chunk_text = ' '.join(chunk_tokens)
-
-            chunks.append(chunk_text)
-
-            # Move start position for next chunk, considering overlap
-            start = end - self.chunk_overlap if end < len(tokens) else end
-
-        # Log chunk statistics
-        logger.debug(
-            f"Split text into {len(chunks)} chunks with NLTK tokenizer")
-
-        return chunks
+# # Use ./nltk_data in the workspace
+# nltk_data_dir = os.path.join(os.getcwd(), "nltk_data")
+# # Create the directory if it doesn't exist
+# print(f"NLTK data directory: {nltk_data_dir}")
+# os.makedirs(nltk_data_dir, exist_ok=True)
+# os.environ["NLTK_DATA"] = nltk_data_dir
 
 
 class PDFProcessor:
     def __init__(self, config):
         self.config = config
+        # Use LangChain's NLTKTextSplitter directly
         self.text_splitter = NLTKTextSplitter(
             chunk_size=config.chunk_size,
             chunk_overlap=config.chunk_overlap
@@ -134,8 +70,8 @@ class PDFProcessor:
             chunks = []
 
             for text, page_num in text_with_pages:
-                # Split the text into chunks using NLTK tokenizer
-                text_chunks = self.text_splitter.split_text(text)
+                # Split the text into chunks using LangChain's NLTKTextSplitter
+                text_chunks = self.text_splitter.create_documents(text)
 
                 # Create chunk objects with metadata
                 for i, chunk in enumerate(text_chunks):
@@ -148,7 +84,7 @@ class PDFProcessor:
                     })
 
             logger.info(
-                f"Created {len(chunks)} chunks from the extracted text using NLTK tokenizer")
+                f"Created {len(chunks)} chunks from the extracted text using LangChain's NLTKTextSplitter")
             return chunks
 
         except Exception as e:

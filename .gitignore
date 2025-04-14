@@ -56,3 +56,4 @@ sample_pdfs/*.pdf
 projects/*
 /projects
 pdfs/embedded_linux
+nltk_data
