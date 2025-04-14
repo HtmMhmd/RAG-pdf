@@ -55,8 +55,8 @@ class Config:
                 raise ValueError(f"Environment variable {var_name} not set")
             logger.warning(
                 f"Environment variable {var_name} not set, using default: {default}")
-        logger.warning(
-            f"Environment variable {var_name} not set, using default: {value}")
+        # logger.warning(
+            # f"Environment variable {var_name} not set, using default: {value}")
         return value
 
     def parse_bool(self, value):

@@ -19,6 +19,10 @@ function dvc_track_project() {
     
     # Track with DVC
     echo "Tracking project $project_id vector database with DVC..."
+    
+    if ! tail -n 1 .gitignore | grep -q "^$vector_db_path/\*\*$"; then
+        echo "$vector_db_path/**" >> .gitignore
+    fi
     dvc add "$vector_db_path"
     
     # If auto-push is enabled and a remote is configured
