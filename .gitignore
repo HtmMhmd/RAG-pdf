@@ -54,6 +54,5 @@ ENV/
 sample_pdfs/*.pdf
 .dvc/dvc-face-recognizer-e9c05e567127.json
 projects/*
-/projects
-pdfs/embedded_linux
+pdfs/*
 nltk_data

@@ -3,17 +3,16 @@ from typing import List, Tuple, Dict, Any
 import fitz  # PyMuPDF
 import re
 import os
-
-from langchain.text_splitter import NLTKTextSplitter
-import nltk
 from langchain_text_splitters.nltk import NLTKTextSplitter
+import nltk
 
 # Download NLTK data on first import
 try:
-    nltk.data.find('tokenizers/punkt')
+    nltk.data.find('tokenizers/punkt_tab')
 except LookupError:
-    nltk.download('punkt')
+    nltk.download('punkt_tab', download_dir='/usr/share/nltk_data')
 
+# nltk.download('punkt_tab')
 
 logger = logging.getLogger(__name__)
 

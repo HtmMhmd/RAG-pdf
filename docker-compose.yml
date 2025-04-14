@@ -9,30 +9,30 @@ services:
     container_name: rag-pdf
     volumes:
       # Mount project PDFs directory
-      - ./projects:/app/projects
+      - ./projects:/app/projects:rw
       # Mount vector database for persistence
-      - ./data/vector_db:/app/data/vector_db
+      - ./data/vector_db:/app/data/vector_db:rw
       # Mount individual PDF files if needed
-      - ./pdfs:/app/pdfs
+      - ./pdfs:/app/pdfs:ro
       # Mount DVC cache and config
-      - ./.dvc:/app/.dvc
+      - ./.dvc:/app/.dvc:ro
       - ~/.dvc/cache:/root/.dvc/cache
       # Mount credentials for DVC
       - ~/.config/gcloud:/root/.config/gcloud
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-ada-002}
-      - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
-      - USE_LOCAL_EMBEDDINGS=${USE_LOCAL_EMBEDDINGS:-true}
-      - LOCAL_EMBEDDING_MODEL=${LOCAL_EMBEDDING_MODEL:-all-MiniLM-L6-v2}
-      - VECTOR_DB_PATH=/app/data/vector_db
-      - DEFAULT_PROJECT=${DEFAULT_PROJECT:-default}
-      - PROJECTS_DIR=/app/projects
-      - DVC_REMOTE=${DVC_REMOTE}
-      - DVC_AUTO_PUSH=${DVC_AUTO_PUSH:-false}
-      - DVC_AUTO_PULL=${DVC_AUTO_PULL:-false}
-      - PYTHONUNBUFFERED=1
-      - TOKENIZERS_PARALLELISM=false
+    # environment:
+    #   - OPENAI_API_KEY=${OPENAI_API_KEY}
+    #   - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-ada-002}
+    #   - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
+    #   - USE_LOCAL_EMBEDDINGS=${USE_LOCAL_EMBEDDINGS:-true}
+    #   - LOCAL_EMBEDDING_MODEL=${LOCAL_EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+    #   - VECTOR_DB_PATH=/app/data/vector_db
+    #   - DEFAULT_PROJECT=${DEFAULT_PROJECT:-default}
+    #   - PROJECTS_DIR=/app/projects
+    #   - DVC_REMOTE=${DVC_REMOTE}
+    #   - DVC_AUTO_PUSH=${DVC_AUTO_PUSH:-false}
+    #   - DVC_AUTO_PULL=${DVC_AUTO_PULL:-false}
+    #   - PYTHONUNBUFFERED=1
+    #   - TOKENIZERS_PARALLELISM=false
     # Use entrypoint from Dockerfile by default, but allow override
     # To run shell instead: docker-compose run --entrypoint bash rag-pdf
     tty: true

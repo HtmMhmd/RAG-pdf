@@ -1,434 +1,225 @@
 # PDF RAG (Retrieval-Augmented Generation) System
 
-A professional system for answering questions about PDF documents using RAG (Retrieval-Augmented Generation) with LLMs.
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg)](https://www.docker.com/)
+[![LangChain](https://img.shields.io/badge/LangChain-Powered-green.svg)](https://langchain.com/)
 
-## Features
+A professional document question-answering system that uses Retrieval-Augmented Generation (RAG) to provide accurate, contextual answers from PDF documents. This tool bridges the gap between unstructured PDF content and LLM capabilities, making your documents searchable and queryable through natural language.
 
-- Extract text from PDF documents
-- Process and chunk text for optimal retrieval
-- Generate embeddings for semantic search
-- Store and retrieve vectors using ChromaDB
-- Answer questions using LLMs with context from the PDF
-- Docker containerization for easy deployment
-- Devcontainer setup for consistent development environment
+## 📋 Key Features
 
-## Requirements
+- **PDF Text Extraction**: Efficiently extracts and processes text from PDF files
+- **Intelligent Text Chunking**: Uses LangChain's NLTKTextSplitter for optimal retrieval
+- **Flexible Embedding Options**: Choose between local embedding models or OpenAI API
+- **Vector Database Storage**: Persistent ChromaDB integration for semantic search
+- **Project-Based Organization**: Group related PDFs for cross-document querying
+- **Version Control**: DVC integration for tracking and sharing vector databases
+- **Docker Integration**: Containerization for consistent deployment and scaling
+- **Devcontainer Support**: VS Code devcontainer for easy development setup
+
+## 🚀 Installation
+
+### Prerequisites
 
 - Python 3.9+
 - Docker (for containerized deployment)
-- OpenAI API key (or another LLM provider)
+- Git (for version control)
+- OpenAI API key (optional, for OpenAI embeddings and LLM)
 
-## Quick Start
+### Docker Installation (Recommended)
 
-1. Clone this repository:
-```bash
-git clone https://github.com/yourusername/rag-pdf.git
-cd rag-pdf
-```
-
-2. Copy the example environment file and edit it with your settings:
-```bash
-cp .env.example .env
-# Edit .env with your API keys and configuration
-```
-
-3. Run with Docker:
-```bash
-docker build -t rag-pdf .
-docker run -it --env-file .env -v $(pwd)/sample_pdfs:/app/sample_pdfs rag-pdf --pdf sample_pdfs/your_document.pdf --question "Your question about the document?"
-```
-
----
-## DVC for Vector Database Version Control
-
-The system uses DVC (Data Version Control) to track and synchronize project vector databases, making it easier to share and version large database files without storing them in Git.
-
-### Setting Up DVC for Project Vector Databases
-
-1. Install DVC:
+1. Clone the repository:
    ```bash
-   pip install dvc
-   pip install dvc-gdrive  # For Google Drive storage
+   git clone https://github.com/yourusername/rag-pdf.git
+   cd rag-pdf
    ```
 
-2. Initialize DVC in your repository:
+2. Create and configure environment variables:
    ```bash
-   dvc init
-   git add .dvc .dvcignore
-   git commit -m "Initialize DVC"
+   cp .env.example .env
+   # Edit .env with your API keys and configuration
    ```
 
-### Configuring Remote Storage
-
-1. **Set up Google Drive storage**:
+3. Build and run with Docker Compose:
    ```bash
-   # Create a folder in Google Drive and get its ID from the URL
-   dvc remote add -d myremote gdrive://your-folder-id
+   docker-compose build
+   docker-compose up -d
    ```
 
-   **Using a Service Account** (recommended for automation):
+### Local Installation
+
+1. Clone the repository:
    ```bash
-   # After creating a service account and downloading its JSON key
-   dvc remote modify myremote gdrive_use_service_account true
-   dvc remote modify myremote gdrive_service_account_json_file_path path/to/credentials.json
+   git clone https://github.com/htmmhmd/rag-pdf.git
+   cd rag-pdf
    ```
 
-2. **Alternative storage options**:
+2. Create a virtual environment:
    ```bash
-   # AWS S3
-   dvc remote add -d myremote s3://bucket/path
-   
-   # Azure Blob Storage
-   dvc remote add -d myremote azure://container/path
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-### Using DVC with Project Vector Databases
-
-Our system automatically integrates with DVC when processing PDFs and answering questions. You can control this behavior with these environment variables:
-
-- `DVC_REMOTE`: URL of your DVC remote
-- `DVC_AUTO_PUSH`: Automatically push vector databases after processing (true/false)
-- `DVC_AUTO_PULL`: Automatically pull vector databases before querying (true/false)
-
-#### Manual DVC Commands
-
-You can also manually track, push, and pull project vector databases:
-
-1. **Track a project's vector database**:
+3. Install dependencies:
    ```bash
-   # After processing PDFs for a project
-   dvc add projects/your_project/vector_db
-   git add projects/your_project/vector_db.dvc
-   git commit -m "Add vector database for project: your_project"
+   pip install -r requirements.txt
    ```
 
-2. **Push to remote storage**:
+4. Configure environment variables:
    ```bash
-   dvc push projects/your_project/vector_db.dvc
+   cp .env.example .env
+   # Edit .env with your API keys and preferences
    ```
 
-3. **Pull from remote storage**:
-   ```bash
-   dvc pull projects/your_project/vector_db.dvc
-   ```
+## 💡 How to Use
 
-#### Using with Docker Compose
+### Quick Start Examples
 
-The Docker setup includes built-in DVC support:
-
+**Process a PDF and ask a question:**
 ```bash
-# Process PDFs and push to DVC remote
-docker-compose run rag-pdf --pdf /app/pdfs/document.pdf --project "your_project" --dvc-push
+# With Docker
+docker-compose run rag-pdf --pdf /app/pdfs/your_document.pdf --question "What are the key points in this document?"
 
-# Pull existing vector database and query
-docker-compose run rag-pdf --project "your_project" --dvc-pull --question "Your question?"
+# Without Docker
+python main.py --pdf path/to/your/document.pdf --question "What are the key points in this document?"
 ```
 
-### Best Practices for DVC with RAG Projects
-
-1. **Version control strategy**: Create a new DVC entry whenever you add significant PDFs to a project
-2. **Git workflow**: Always commit the .dvc files to Git after running `dvc add`
-3. **Backup**: Regularly push your DVC files to ensure your vector databases are backed up
-4. **Collaboration**: Team members can easily share project knowledge bases by pulling the vector databases
-5. **Storage optimization**: Consider periodically rebuilding indices for frequently updated projects
-
-### Sharing Vector Databases with Team Members
-
-To share vector databases with team members:
-
-1. Commit and push the .dvc files to Git:
-   ```bash
-   git add projects/your_project/vector_db.dvc
-   git commit -m "Update vector database for project"
-   git push
-   ```
-
-2. Team members can then pull the database:
-   ```bash
-   git pull
-   dvc pull projects/your_project/vector_db.dvc
-   ```
-
-## Development Setup
-
-### Using VS Code Devcontainer
-
-1. Ensure you have Docker and VS Code with the Remote - Containers extension installed.
-2. Open the project folder in VS Code.
-3. Click on "Reopen in Container" when prompted, or run the "Remote-Containers: Reopen in Container" command from the Command Palette.
-4. The container will build and set up the development environment automatically.
-
-### Manual Setup
-
-1. Create a virtual environment:
+**Process PDFs into a project:**
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Create a project and process multiple PDFs
+docker-compose run rag-pdf --pdf /app/pdfs/document1.pdf --project "research_project"
+docker-compose run rag-pdf --pdf /app/pdfs/document2.pdf --project "research_project"
 ```
 
-2. Install dependencies:
+**Query across a whole project:**
 ```bash
-pip install -r requirements.txt
+docker-compose run rag-pdf --project "research_project" --question "What are the common themes across these documents?"
 ```
 
-## Usage
+### Using the Batch Processing Script
 
-### Basic Operations
-
-Process a PDF and ask a question:
-
-```bash
-python main.py --pdf path/to/your/document.pdf --question "Your question about the document?"
-```
-
-Process a PDF without asking a question (to build the index):
-
-```bash
-python main.py --pdf path/to/your/document.pdf
-```
-
-Force rebuild of the index:
-
-```bash
-python main.py --pdf path/to/your/document.pdf --rebuild-index
-```
-
-### Project-Based PDF Organization
-
-The system supports organizing PDFs into projects for better management and cross-document querying:
-
-Process a PDF for a specific project:
-
-```bash
-python main.py --pdf path/to/your/document.pdf --project "project_name"
-```
-
-Ask a question about a specific PDF within a project:
-
-```bash
-python main.py --pdf path/to/your/document.pdf --project "project_name" --question "Your question about this document?"
-```
-
-Ask a question across all PDFs in a project:
-
-```bash
-python main.py --project "project_name" --question "Your question about any document in this project?"
-```
-
-### Processing Multiple PDFs at Once
-
-Process all PDFs in a directory and add them to a project:
-
-```bash
-python main.py --pdf path/to/pdf/directory --project "project_name"
-```
-
-This will:
-1. Scan the directory (and subdirectories) for PDF files
-2. Process each PDF found and add it to the specified project
-3. Push the vector database to DVC if configured
-
-You can also immediately ask a question about all the processed PDFs:
-
-```bash
-python main.py --pdf path/to/pdf/directory --project "project_name" --question "What are the key topics across all these documents?"
-```
-
-Using with Docker:
-
-```bash
-docker-compose run rag-pdf --pdf /app/pdfs/directory --project "your_project"
-```
-
-#### Using the Batch Processing Script
-
-For more convenient batch processing, you can use the provided shell script:
+For processing multiple PDFs at once:
 
 ```bash
 # Make the script executable
 chmod +x scripts/process_project_pdfs.sh
 
-# Run the script with project name and PDF directory
-./scripts/process_project_pdfs.sh project_name path/to/pdf/directory
-
-# Example:
-./scripts/process_project_pdfs.sh embedded_linux projects/embedded_linux
+# Process all PDFs in a directory
+./scripts/process_project_pdfs.sh research_project
 ```
 
-The script will:
-1. Process all PDFs found in the specified directory (including subdirectories)
-2. Add each PDF to the specified project
-3. Show progress information during processing
+### API Usage Diagram
 
-### Using Docker Compose
-
-The project includes a Docker Compose configuration for easier deployment:
-
-1. Build and start the container:
-```bash
-docker-compose up --build -d
+```
+┌─────────────────┐     ┌──────────────────┐     ┌───────────────┐
+│                 │     │                  │     │               │
+│  PDF Document   │────►│  Text Extraction │────►│  Text Chunking│
+│                 │     │                  │     │               │
+└─────────────────┘     └──────────────────┘     └───────┬───────┘
+                                                         │
+                                                         ▼
+┌─────────────────┐     ┌──────────────────┐     ┌───────────────┐
+│                 │     │                  │     │               │
+│  User Query     │────►│  Vector Search   │◄────│  Vector DB    │
+│                 │     │                  │     │               │
+└─────────────────┘     └────────┬─────────┘     └───────▲───────┘
+                                 │                       │
+                                 ▼                       │
+                        ┌──────────────────┐     ┌───────────────┐
+                        │                  │     │               │
+                        │  LLM Response    │     │  Embeddings   │
+                        │                  │     │  Generation   │
+                        └──────────────────┘     └───────────────┘
 ```
 
-2. Process a PDF file:
-```bash
-docker-compose run rag-pdf --pdf /app/pdfs/your_document.pdf --project "your_project"
-```
-
-3. Ask a question about a PDF:
-```bash
-docker-compose run rag-pdf --pdf /app/pdfs/your_document.pdf --project "your_project" --question "Your question?"
-```
-
-4. Ask a question across an entire project:
-```bash
-docker-compose run rag-pdf --project "your_project" --question "Your cross-document question?"
-```
-
-5. Access the container shell:
-```bash
-docker-compose run --entrypoint bash rag-pdf
-```
-
-### Project Structure
-
-To organize your PDFs into projects:
-
-1. Create a directory for your project in the `projects` directory:
-```bash
-mkdir -p projects/your_project
-```
-
-2. Copy your PDFs into the project directory:
-```bash
-cp your_documents/*.pdf projects/your_project/
-```
-
-3. Process all PDFs in the project:
-```bash
-# Manual method
-for pdf in projects/your_project/*.pdf; do
-  python main.py --pdf "$pdf" --project "your_project"
-done
-
-# Or using the batch processing script
-./scripts/process_project_pdfs.sh your_project projects/your_project
-```
-
-4. Query across all project documents:
-```bash
-python main.py --project "your_project" --question "What are the key points from all these documents?"
-```
+## ⚙️ Configuration
 
 ### Environment Variables
 
-Key environment variables that control the system behavior:
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `USE_LOCAL_EMBEDDINGS` | Use local embedding models instead of OpenAI | `true` |
+| `LOCAL_EMBEDDING_MODEL` | Local embedding model to use | `all-MiniLM-L6-v2` |
+| `EMBEDDING_MODEL` | OpenAI embedding model | `text-embedding-ada-002` |
+| `LLM_MODEL` | OpenAI LLM model | `gpt-4o-mini` |
+| `DEFAULT_PROJECT` | Default project name | `default` |
+| `VECTOR_DB_PATH` | Path to vector database | `/app/data/vector_db` |
+| `DVC_REMOTE` | URL of DVC remote | none |
+| `DVC_AUTO_PUSH` | Push to DVC after processing | `false` |
+| `DVC_AUTO_PULL` | Pull from DVC before querying | `false` |
 
-- `USE_LOCAL_EMBEDDINGS`: Set to `true` to use local embedding models instead of OpenAI API
-- `LOCAL_EMBEDDING_MODEL`: Specify which local model to use (default: `all-MiniLM-L6-v2`)
-- `EMBEDDING_MODEL`: OpenAI embedding model (default: `text-embedding-ada-002`)
-- `LLM_MODEL`: OpenAI LLM model (default: `gpt-3.5-turbo`)
-- `DEFAULT_PROJECT`: Default project name when not specified (default: `default`)
+### Command Line Arguments
 
-## How It Works: RAG Pipeline Explained
+| Argument | Description |
+|----------|-------------|
+| `--pdf` | Path to PDF file or directory of PDFs |
+| `--question` | Question to ask about the document(s) |
+| `--project` | Project name to organize related PDFs |
+| `--rebuild-index` | Force rebuild of the vector index |
+| `--dvc-push` | Push vector DB to DVC remote after processing |
+| `--dvc-pull` | Pull vector DB from DVC remote before querying |
 
-This system uses a Retrieval-Augmented Generation (RAG) pipeline to answer questions about PDF documents. Here's a step-by-step explanation of how it works:
+## 🔍 Detailed System Explanation
 
-### 1. PDF Processing and Text Extraction
+### RAG Pipeline Architecture
 
-First, the system extracts and processes text from the PDF document:
+The PDF RAG system implements a Retrieval-Augmented Generation pipeline to enhance LLM responses with relevant context from PDF documents:
+
+1. **Document Processing Layer**
+   - PDF text extraction using PyMuPDF
+   - Text normalization and cleaning
+   - Intelligent chunking with LangChain's NLTKTextSplitter
+   - Document metadata preservation (page numbers, chunk IDs)
+
+2. **Vector Representation Layer**
+   - Embedding generation with local models (SentenceTransformers) or OpenAI
+   - Vector storage in ChromaDB for efficient similarity search
+   - Project-based organization for document collections
+   - Version control with DVC for sharing and collaboration
+
+3. **Retrieval Layer**
+   - Semantic search for relevant document chunks
+   - Metadata-based filtering capabilities
+   - Configurable retrieval parameters (chunk count, similarity threshold)
+   - Cross-document context retrieval within projects
+
+4. **Generation Layer**
+   - Context-enhanced prompts for LLMs
+   - Page citation integration in responses
+   - Fallback mechanisms for API failures
+   - Response formatting and post-processing
+
+### Key Components
+
+#### PDF Processor
+
+The `PDFProcessor` class handles the extraction and chunking of PDF text:
 
 ```python
-# Extract text from PDF with page numbers
-def extract_text_from_pdf(self, pdf_path: str) -> List[Tuple[str, int]]:
-    doc = fitz.open(pdf_path)
-    text_with_pages = []
-    
-    for page_num, page in enumerate(doc):
-        text = page.get_text()
-        # Clean text: remove excessive whitespace and normalize
-        text = re.sub(r'\s+', ' ', text).strip()
-        if text:  # Only add non-empty text
-            text_with_pages.append((text, page_num + 1))  # 1-indexed page numbers
-            
-    return text_with_pages
-```
+def process_pdf(self, pdf_path: str) -> List[dict]:
+    """
+    Process a PDF file: extract text and split into chunks.
 
-The extracted text is then split into smaller chunks for efficient processing:
+    Args:
+        pdf_path: Path to the PDF file
 
-```python
-# Split text into chunks
-def chunk_text(self, text_with_pages: List[Tuple[str, int]]) -> List[dict]:
-    chunks = []
-    
-    for text, page_num in text_with_pages:
-        # Split the text into chunks
-        text_chunks = self.text_splitter.split_text(text)
-        
-        # Create chunk objects with metadata
-        for i, chunk in enumerate(text_chunks):
-            chunks.append({
-                "content": chunk,
-                "metadata": {
-                    "page": page_num,
-                    "chunk_id": f"page_{page_num}_chunk_{i}"
-                }
-            })
-            
+    Returns:
+        List of dictionaries with text chunks and their metadata
+    """
+    logger.info(f"Processing PDF: {pdf_path}")
+    text_with_pages = self.extract_text_from_pdf(pdf_path)
+    chunks = self.chunk_text(text_with_pages)
     return chunks
 ```
 
-### 2. Embedding Generation
+#### Vector Database
 
-Next, the system generates embeddings for each text chunk. The system supports both OpenAI API embeddings and local embedding models:
-
-```python
-def generate_embeddings(self, chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    texts = [chunk["content"] for chunk in chunks]
-    
-    # First check if we're configured to use local embeddings by default
-    if self.use_local_embeddings:
-        all_embeddings = self.generate_embeddings_with_local_model(texts)
-    else:
-        # Try with OpenAI first, fallback to local model if it fails
-        try:
-            all_embeddings = self.generate_embeddings_with_openai(texts)
-        except Exception as e:
-            logger.warning(f"OpenAI API error: {e}. Falling back to local embedding model.")
-            all_embeddings = self.generate_embeddings_with_local_model(texts)
-    
-    # Add embeddings to chunks
-    for i, (chunk, embedding) in enumerate(zip(chunks, all_embeddings)):
-        chunk["embedding"] = embedding
-    
-    return chunks
-```
-
-#### Local Embedding Generation
-
-```python
-def generate_embeddings_with_local_model(self, texts: List[str]) -> List[List[float]]:
-    if self.local_model is None:
-        self.local_model = SentenceTransformer(self.local_model_name)
-    
-    # Generate embeddings in batches to avoid memory issues
-    batch_size = 32
-    all_embeddings = []
-    
-    for i in range(0, len(texts), batch_size):
-        batch_texts = texts[i:i+batch_size]
-        batch_embeddings = self.local_model.encode(batch_texts).tolist()
-        all_embeddings.extend(batch_embeddings)
-        
-    return all_embeddings
-```
-
-### 3. Vector Database Storage
-
-The system stores text chunks and their embeddings in a vector database (ChromaDB):
+The system uses ChromaDB as its vector store, with methods for adding and retrieving chunks:
 
 ```python
 def add_chunks_to_db(self, chunks: List[Dict[str, Any]], pdf_path: str) -> None:
-    # Create a new collection or get existing one
+    # Create or replace collection
     if self.collection_exists(pdf_path):
         collection_name = self.get_collection_name(pdf_path)
         self.client.delete_collection(collection_name)
@@ -440,194 +231,114 @@ def add_chunks_to_db(self, chunks: List[Dict[str, Any]], pdf_path: str) -> None:
     documents = [chunk["content"] for chunk in chunks]
     metadatas = [chunk["metadata"] for chunk in chunks]
     
-    # Check if chunks already have embeddings
+    # Insert with embeddings if available
     if "embedding" in chunks[0] and chunks[0]["embedding"] is not None:
         embeddings = [chunk["embedding"] for chunk in chunks]
-        collection.add(
-            ids=ids,
-            documents=documents,
-            metadatas=metadatas,
-            embeddings=embeddings
-        )
+        collection.add(ids=ids, documents=documents, metadatas=metadatas, embeddings=embeddings)
     else:
-        # If no pre-generated embeddings, let ChromaDB handle embedding
-        collection.add(
-            ids=ids,
-            documents=documents,
-            metadatas=metadatas
-        )
+        collection.add(ids=ids, documents=documents, metadatas=metadatas)
 ```
 
-### 4. Question Answering
+#### DVC Integration
 
-When a question is asked, the system:
-
-1. Retrieves relevant chunks from the vector database
-2. Passes these chunks and the question to an LLM
-3. Returns the generated answer with citations
-
-#### Vector Search
+DVC is used for version controlling the vector databases:
 
 ```python
-def query_db(self, question: str, pdf_path: str, n_results: int = None) -> List[Dict[str, Any]]:
-    if n_results is None:
-        n_results = self.config.max_chunks
-        
+def push_to_dvc(self, project_name: str) -> bool:
+    """Push project vector DB to DVC remote"""
+    vector_db_path = os.path.join(self.projects_dir, project_name, "vector_db")
+    
+    if not os.path.exists(vector_db_path):
+        logger.error(f"Vector DB not found at {vector_db_path}")
+        return False
+    
+    # Add to DVC
     try:
-        collection = self.get_collection(pdf_path)
-        
-        # Try standard query first, fallback to local embeddings if it fails
-        try:
-            results = collection.query(
-                query_texts=[question],
-                n_results=n_results
-            )
-        except Exception:
-            # Generate embedding using our local model
-            query_embedding = self.get_query_embedding(question)
-            results = collection.query(
-                query_embeddings=[query_embedding],
-                n_results=n_results
-            )
-        
-        # Convert results to a convenient format
-        chunks = []
-        for i in range(len(results["ids"][0])):
-            chunks.append({
-                "content": results["documents"][0][i],
-                "metadata": results["metadatas"][0][i]
-            })
-        
-        return chunks
-    except Exception:
-        # Fallback to empty results if all else fails
-        return []
+        subprocess.run(["dvc", "add", vector_db_path], check=True)
+        subprocess.run(["dvc", "push", f"{vector_db_path}.dvc"], check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"DVC error: {e}")
+        return False
 ```
 
-#### Answer Generation
+## 📊 Usage Examples
 
-```python
-def generate_answer(self, question: str, context_chunks: List[Dict[str, Any]]) -> Tuple[str, List[int]]:
-    # Build the prompt
-    prompt = self.build_prompt(question, context_chunks)
-    
-    try:
-        # Call the OpenAI API
-        response = openai.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that answers questions based on the provided document excerpts."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,
-            max_tokens=1000
-        )
-        
-        answer = response.choices[0].message.content.strip()
-    except Exception as e:
-        # Fallback answer generation without LLM
-        context_text = "\n\n".join([chunk["content"] for chunk in context_chunks])
-        answer = (
-            f"I found the following information in the document that may help answer your question about '{question}':\n\n"
-            f"{context_text}\n\n"
-            f"The above excerpts are from the document and may contain relevant information to answer your question."
-        )
-    
-    # Extract citation page numbers
-    citations = list(set(re.findall(r'\[Page\s+(\d+)\]', answer)))
-    citations = [int(page) for page in citations]
-    
-    return answer, citations
-```
-
-### 5. Overall Pipeline Pseudocode
-
-Here's a pseudocode representation of the entire RAG pipeline:
-
-```python
-# Pseudocode for the RAG pipeline
-def process_pdf_and_answer_question(pdf_path, question):
-    # Step 1: Extract and chunk text
-    text_with_pages = extract_text_from_pdf(pdf_path)
-    chunks = chunk_text(text_with_pages)
-    
-    # Step 2: Generate embeddings
-    chunks_with_embeddings = generate_embeddings(chunks)
-    
-    # Step 3: Store in vector database
-    add_chunks_to_db(chunks_with_embeddings, pdf_path)
-    
-    # Step 4: Query database and generate answer
-    context_chunks = query_db(question, pdf_path)
-    answer, citations = generate_answer(question, context_chunks)
-    
-    return answer, citations
-```
-
-## Deployment
-
-The system can be deployed using Docker to various platforms:
-
-### AWS ECS
-
-1. Build and push the Docker image to ECR:
-```bash
-aws ecr get-login-password --region your-region | docker login --username AWS --password-stdin your-account-id.dkr.ecr.your-region.amazonaws.com
-docker build -t your-repo/rag-pdf .
-docker tag your-repo/rag-pdf your-account-id.dkr.ecr.your-region.amazonaws.com/your-repo/rag-pdf
-docker push your-account-id.dkr.ecr.your-region.amazonaws.com/your-repo/rag-pdf
-```
-
-2. Create an ECS task definition that uses the image and includes your environment variables.
-3. Create an ECS service to run the task.
-
-### Google Cloud Run
+### Example 1: Processing a Technical PDF and Asking Questions
 
 ```bash
-gcloud builds submit --tag gcr.io/your-project/rag-pdf
-gcloud run deploy rag-pdf --image gcr.io/your-project/rag-pdf --platform managed
+# Process a technical manual
+docker-compose run rag-pdf --pdf /app/pdfs/technical_manual.pdf --project "manuals"
+
+# Ask specific questions about the technical content
+docker-compose run rag-pdf --project "manuals" --question "How do I configure the network settings according to the manual?"
 ```
 
-## CI/CD with GitHub Actions
+Expected output:
+```
+According to the technical manual, you can configure network settings by:
+1. Navigating to Settings > Network on the main control panel
+2. Selecting either DHCP for automatic configuration or Static IP for manual setup
+3. For Static IP, entering the required fields: IP Address, Subnet Mask, Gateway, and DNS servers
+4. Clicking Apply to save the changes
+5. Restarting the network service by clicking on "Restart Network"
 
-Here's a basic GitHub Actions workflow to build and deploy the Docker image:
-
-```yaml
-name: Build and Deploy
-
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      
-      - name: Login to Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: your-registry.com
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
-      
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          push: true
-          tags: your-registry.com/your-repo/rag-pdf:latest
-      
-      - name: Deploy to your platform
-        run: |
-          # Add deployment commands for your platform
-          # e.g., kubectl apply, aws ecs update-service, etc.
+[Page 24] The manual notes that you should record your settings before making changes in case you need to revert.
 ```
 
-## License
+### Example 2: Research Paper Analysis
 
-[MIT License](LICENSE)
+```bash
+# Process multiple research papers into a project
+./scripts/process_project_pdfs.sh research_project projects/research_project
+
+# Ask for a synthesis of findings across papers
+docker-compose run rag-pdf --project "research_project" --question "What are the common challenges in implementing transformer models according to these papers?"
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Here's how you can contribute:
+
+1. **Bug Reports and Feature Requests**
+   - Open an issue on GitHub describing the bug or feature
+   - Include steps to reproduce for bugs
+   - Explain the value and use case for features
+
+2. **Code Contributions**
+   - Fork the repository
+   - Create a feature branch: `git checkout -b feature/amazing-feature`
+   - Commit your changes: `git commit -m 'Add some amazing feature'`
+   - Push to the branch: `git push origin feature/amazing-feature`
+   - Open a pull request
+
+3. **Documentation**
+   - Help improve the documentation with corrections or additions
+   - Add examples to showcase different use cases
+
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgements
+
+- [LangChain](https://github.com/langchain-ai/langchain) for the document processing and LLM integration tools
+- [ChromaDB](https://github.com/chroma-core/chroma) for the vector database
+- [PyMuPDF](https://github.com/pymupdf/PyMuPDF) for PDF text extraction
+- [NLTK](https://www.nltk.org/) for text chunking capabilities
+- [SentenceTransformers](https://github.com/UKPLab/sentence-transformers) for embedding models
+- [DVC](https://dvc.org/) for vector database version control
+- [Docker](https://www.docker.com/) for containerization support
+
+## 📬 Contact
+
+For questions, feedback, or support, please:
+- Open an issue on GitHub
+- Contact the maintainer at [your-email@example.com](mailto:your-email@example.com)
+- Join our [Discord community](https://discord.gg/example)
+
+---
+
+**Note**: This README provides comprehensive documentation for the PDF RAG system. For further details, refer to the inline code documentation and comments.

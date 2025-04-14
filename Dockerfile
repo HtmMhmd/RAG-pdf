@@ -19,7 +19,7 @@ RUN python -c "from sentence_transformers import SentenceTransformer; \
     model = SentenceTransformer('all-MiniLM-L6-v2'); \
     print(f'Downloaded model with embedding size: {len(model.encode(\"test\"))}');\
     import nltk; \
-    nltk.download('punkt');"
+    nltk.download('punkt_tab');"
 
 # Set up DVC
 RUN pip install dvc dvc-gdrive
