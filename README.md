@@ -1,9 +1,9 @@
 # PDF RAG (Retrieval-Augmented Generation) System
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg)](https://www.docker.com/)
-[![LangChain](https://img.shields.io/badge/LangChain-Powered-green.svg)](https://langchain.com/)
+<img alt="Python 3.9+" src="https://img.shields.io/badge/python-3.9+-blue.svg">
+<img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg">
+<img alt="Docker" src="https://img.shields.io/badge/Docker-Supported-blue.svg">
+<img alt="LangChain" src="https://img.shields.io/badge/LangChain-Powered-green.svg">
 
 A professional document question-answering system that uses Retrieval-Augmented Generation (RAG) to provide accurate, contextual answers from PDF documents. This tool bridges the gap between unstructured PDF content and LLM capabilities, making your documents searchable and queryable through natural language.
 
